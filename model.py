@@ -61,3 +61,14 @@ class InputEmbeddings(nn.Module):
     def forward(self, x):
         x = x + (self.pe[:, :x.shape[1], :]).requires_grad_(False) # (batch, seq_len, d_mdoel)
         return self.dropout(x)
+
+
+class ResidualConnection(nn.Module):
+
+    def __init__(self, features: int, dropout: float) -> None:
+        super().__init__()
+        self.dropout = nn.Dropout(dropout)
+        self.norm = LayerNormalization(features)
+
+    def forarrd(self, x):
+        return x + self.dropout(sublayer(self.norm(x)))
