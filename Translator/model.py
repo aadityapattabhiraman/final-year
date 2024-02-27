@@ -38,6 +38,18 @@ class FeedForwardBlock(nn.Module):
 
 class InputEmbeddings(nn.Module):
 
+    def __init__(self, d_model: int, vocab_size: int) -> None:
+        super().__init__()
+        self.d_model = d_model
+        self.vocab_size = vocab_size
+        self.embedding = nn.Embedding(vocab_size, d_model)
+
+    def forward(self, x):
+        return self.embedding(x) * math.sqrt(self.d_model)
+
+
+class PositionalEmbeddings(nn.Module):
+
     def __init__(self, d_model: int, seq_len: int, dropout: float) -> None:
         super().__init__()
         self.d_model = d_model
@@ -254,7 +266,7 @@ def build_transformer(src_vocab_size: int, tgt_vocab_size: int, src_seq_len: int
     decoder = Decoder(d_model, nn.ModuleList(decoder_blocks))
 
     # Create the projeection layer
-    projection_layer = ProjectionLyer(d_model, tgt_vocab_size)
+    projection_layer = ProjectionLayer(d_model, tgt_vocab_size)
 
     # Create the transformer
     transformer = Transformer(encoder, decoder, src_embed, tgt_embed, src_pos, tgt_pos, projection_layer)

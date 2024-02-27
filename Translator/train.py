@@ -134,7 +134,7 @@ def get_or_build_tokenizer(config, ds, lang):
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
         tokenizer.pre_tokenizer = Whitespace()
         trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]"], min_frequency=2)
-        tokenizer.train_fromiterator(get_all_sentences(ds, lang), trainer=trainer)
+        tokenizer.train_fromiterator(get_all_sentences(ds, lang), trainer=trainer, padding=True, truncation=True)
         tokenizer.save(str(tokenizer_path))
     else:
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
@@ -148,7 +148,7 @@ def get_ds(config):
     # Build tokenizers
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config["lang_src"])
     tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config["lang_tgt"])
-
+    exit()
     # Keep 90% for training, 10% for validation
     train_ds_size = int(0.9 * len(ds_raw))
     val_ds_size = len(ds_raw) - train_ds_size
