@@ -16,7 +16,7 @@ import os
 from pathlib import Path
 
 # Huggingface datasets and tokenizers
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel
 from tokenizers.trainers import WordLevelTrainer
@@ -59,6 +59,18 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
             break
 
     return decoder_input.squeeze(0)
+
+
+def filter_by_length_and_lang(example, language):
+  # Access the sentence you want to check (modify "text" if different)
+  sentence = example["translation"][language]  # Assuming "text" is a dictionary with languages as keys
+  # Define the maximum allowed length
+  max_length = 512
+  return len(sentence) <= max_length
+
+# Assuming you have your dataset loaded as "dataset" and know the target language ("en" for English)
+
+
 
 
 def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, device, print_msg, global_state, writer, num_examples=2):
@@ -124,7 +136,10 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
 
 def get_all_sentences(ds, lang):
     for item in ds:
-        yield item["translation"]["lang"]
+        if len(item["translation"][lang]) > 1024:
+            continue
+        yield item["translation"][lang]
+
 
 
 def get_or_build_tokenizer(config, ds, lang):
@@ -134,7 +149,7 @@ def get_or_build_tokenizer(config, ds, lang):
         tokenizer = Tokenizer(WordLevel(unk_token="[UNK]"))
         tokenizer.pre_tokenizer = Whitespace()
         trainer = WordLevelTrainer(special_tokens=["[UNK]", "[PAD]", "[SOS]", "[EOS]"], min_frequency=2)
-        tokenizer.train_fromiterator(get_all_sentences(ds, lang), trainer=trainer, padding=True, truncation=True)
+        tokenizer.train_from_iterator(get_all_sentences(ds, lang), trainer=trainer)
         tokenizer.save(str(tokenizer_path))
     else:
         tokenizer = Tokenizer.from_file(str(tokenizer_path))
@@ -143,12 +158,12 @@ def get_or_build_tokenizer(config, ds, lang):
 
 def get_ds(config):
     # It only has the train split, so we divide it ourselves
-    ds_raw = load_dataset(f"{config['datasource']}", f"{config['lang_src']}-{config['lang_tgt']}", split="train")
+    ds_raw = load_dataset(f"{config['datasource']}", lang1=f"{config['lang_src']}", lang2=f"{config['lang_tgt']}", split="train")
+    ds_raw = ds_raw.filter(lambda example: filter_by_length_and_lang(example, "ta"))
 
     # Build tokenizers
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config["lang_src"])
     tokenizer_tgt = get_or_build_tokenizer(config, ds_raw, config["lang_tgt"])
-    exit()
     # Keep 90% for training, 10% for validation
     train_ds_size = int(0.9 * len(ds_raw))
     val_ds_size = len(ds_raw) - train_ds_size
@@ -164,11 +179,6 @@ def get_ds(config):
     for item in ds_raw:
         src_ids = tokenizer_src.encode(item["translation"][config["lang_src"]]).ids
         tgt_ids = tokenizer_tgt.encode(item["translation"][config["lang_tgt"]]).ids
-        max_len_src = max(max_len_src, len(src_ids))
-        max_len_tgt = max(max_len_tgt, len(tgt_ids))
-
-    print(f"Max length of source sentence: {max_len_src}")
-    print(f"Max length of target sentence: {max_len_tgt}")
 
     train_dataloader = DataLoader(train_ds, batch_size=config["batch_size"], shuffle=True)
     val_dataloader = DataLoader(val_ds, batch_size=1, shuffle=True)
