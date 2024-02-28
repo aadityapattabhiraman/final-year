@@ -24,7 +24,7 @@ class BilingualDataset(Dataset):
     def __len__(self):
         return len(self.ds)
 
-    def __get_item__(self, idx):
+    def __getitem__(self, idx):
         src_target_pair = self.ds[idx]
         src_text = src_target_pair["translation"][self.src_lang]
         tgt_text = src_target_pair["translation"][self.tgt_lang]
@@ -55,11 +55,11 @@ class BilingualDataset(Dataset):
         )
 
         # Add only <s> tokens
-        decoder_input = torcg.cat(
+        decoder_input = torch.cat(
             [
                 self.sos_token,
-                torch.tensor(dec_input_tokens, stype=torch.int64),
-                torch.tensor([self.pad_tokens] * dec_num_padding_tokens, dtype=torch.int64),
+                torch.tensor(dec_input_tokens, dtype=torch.int64),
+                torch.tensor([self.pad_token] * dec_num_padding_tokens, dtype=torch.int64),
             ],
             dim=0,
         )
@@ -77,7 +77,7 @@ class BilingualDataset(Dataset):
         # Double check the size of the tensors to make sure they all are seq_len long
         assert encoder_input.size(0) == self.seq_len
         assert decoder_input.size(0) == self.seq_len
-        assert label.size(0) == self.seq_lem
+        assert label.size(0) == self.seq_len
 
         return {
             "encoder_input": encoder_input, # (seq_len)

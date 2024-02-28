@@ -75,14 +75,14 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class ResidualConnection(nn.Module):
+class ResidualConnections(nn.Module):
 
     def __init__(self, features: int, dropout: float) -> None:
         super().__init__()
         self.dropout = nn.Dropout(dropout)
         self.norm = LayerNormalization(features)
 
-    def forarrd(self, x):
+    def forward(self, x, sublayer):
         return x + self.dropout(sublayer(self.norm(x)))
 
 
@@ -145,7 +145,7 @@ class EncoderBlock(nn.Module):
         super().__init__()
         self.self_attention_block = self_attention_block
         self.feed_forward_block = feed_forward_block
-        self.esidual_connections = nn.ModuleList([ResidualConnection(features, dropout) for _ in range(2)])
+        self.residual_connections = nn.ModuleList([ResidualConnections(features, dropout) for _ in range(2)])
 
     def forward(self, x, src_mask):
         x = self.residual_connections[0](x, lambda x: self.self_attention_block(x, x, x, src_mask))
@@ -155,9 +155,9 @@ class EncoderBlock(nn.Module):
 
 class Encoder(nn.Module):
 
-    def _init__(self, features: int, layers: nn.ModuleList) -> None:
+    def __init__(self, features: int, layers: nn.ModuleList) -> None:
         super().__init__()
-        self.lsyers = layers
+        self.layers = layers
         self.norm = LayerNormalization(features)
 
     def forward(self, x, mask):
@@ -198,7 +198,7 @@ class Decoder(nn.Module):
 class ProjectionLayer(nn.Module):
 
     def __init__(self, d_model, vocab_size) -> None:
-        super.__init__()
+        super().__init__()
         self.proj = nn.Linear(d_model, vocab_size)
 
     def forward(self, x):
@@ -224,7 +224,7 @@ class Transformer(nn.Module):
         src = self.src_pos(src)
         return self.encoder(src, src_mask)
 
-    def decode(self, encoder_ouput: torch.Tensor, src_mask: torch.Tensor, tgt: torch.Tensor, tgt_mask: torch.Tensor):
+    def decode(self, encoder_output: torch.Tensor, src_mask: torch.Tensor, tgt: torch.Tensor, tgt_mask: torch.Tensor):
         # (batch, seq_len, d_model)
         tgt = self.tgt_embed(tgt)
         tgt = self.tgt_pos(tgt)
