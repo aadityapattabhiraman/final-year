@@ -62,15 +62,11 @@ def greedy_decode(model, source, source_mask, tokenizer_src, tokenizer_tgt, max_
 
 
 def filter_by_length_and_lang(example, language):
-  # Access the sentence you want to check (modify "text" if different)
-  sentence = example["translation"][language]  # Assuming "text" is a dictionary with languages as keys
+  # Access the sentence you want to check
+  sentence = example["translation"][language]
   # Define the maximum allowed length
   max_length = 512
   return len(sentence) <= max_length
-
-# Assuming you have your dataset loaded as "dataset" and know the target language ("en" for English)
-
-
 
 
 def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, device, print_msg, global_step, writer, num_examples=2):
@@ -112,7 +108,7 @@ def run_validation(model, validation_ds, tokenizer_src, tokenizer_tgt, max_len, 
             # Print the source, target and model output
             print_msg("-"*console_width)
             print_msg(f"{f'SOURCE: ':>12}{source_text}")
-            print_msg(f"{f'TARGET: ':>12}{source_text}")
+            print_msg(f"{f'TARGET: ':>12}{target_text}")
             print_msg(f"{f'PREDICTED: ':>12}{model_out_text}")
 
             if count == num_examples:
