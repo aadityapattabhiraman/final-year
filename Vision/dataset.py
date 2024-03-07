@@ -14,7 +14,8 @@ def dataset():
 
     img_size = 224
     manual_transforms = transforms.Compose([
-        transforms.Resize((img_size, img_size))
+        transforms.Resize((img_size, img_size)),
+        transforms.ToTensor(),
     ])
     print(f"Manually created transforms: {manual_transforms}")
 
