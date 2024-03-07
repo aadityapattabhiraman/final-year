@@ -17,3 +17,13 @@ print(f"Using device: {device}")
 
 image_path = download_data(source="https://github.com/aadityapattabhiraman/pytorch0/raw/main/data/pizza_steak_sushi.zip",
                            destination="pizza_steak_sushi")
+print(image_path)
+
+train_dir = image_path / "train"
+test_dir = image_path / "test"
+
+img_size = 224
+manual_transforms = transforms.Compose([
+    transforms.Resize((img_size, img_size))
+])
+print(f"Manually created transforms: {manual_transforms}")
