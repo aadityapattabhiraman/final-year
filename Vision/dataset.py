@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from helper_functions import download_data
+from torchvision import transforms
 
 
 def dataset():
