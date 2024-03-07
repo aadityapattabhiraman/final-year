@@ -39,3 +39,16 @@ embedding_layer_input_shape = (height, width, color_channels)
 embedding_layer_output_shape = (number_of_patches, patch_size ** 2 * color_channels)
 print(f"Input shape (single 2D image): {embedding_layer_input_shape}")
 print(f"Output shape (single 2D image flattened into patches): {embedding_layer_output_shape}")
+
+plt.imshow(image.permute(1, 2, 0))
+plt.title(class_names[label])
+plt.axis(False)
+plt.show()
+
+image_permuted = image.permute(1, 2, 0)
+patch_size = 16
+plt.figure(figsize=(patch_size, patch_size))
+plt.imshow(image_permuted)
+plt.axis(False)
+plt.imshow(image_permuted[:patch_size, :, :])
+plt.show()
