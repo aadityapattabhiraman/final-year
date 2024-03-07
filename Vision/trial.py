@@ -26,3 +26,16 @@ plt.imshow(image.permute(1, 2, 0))
 plt.title(class_names[label])
 plt.axis(False)
 plt.show()
+
+height = 224
+width = 224
+color_channels = 3
+patch_size = 16
+
+number_of_patches = int((height * width) / patch_size ** 2)
+print(f"Number of patches (N) with image height (H={height}), width (W={width}) and patch size (P={patch_size})")
+
+embedding_layer_input_shape = (height, width, color_channels)
+embedding_layer_output_shape = (number_of_patches, patch_size ** 2 * color_channels)
+print(f"Input shape (single 2D image): {embedding_layer_input_shape}")
+print(f"Output shape (single 2D image flattened into patches): {embedding_layer_output_shape}")
