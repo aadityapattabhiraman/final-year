@@ -17,3 +17,12 @@ train_dataloader, test_dataloader, class_names = data_setup.create_dataloaders(
 )
 
 print(train_dataloader, test_dataloader, class_names)
+
+image_batch, label_batch = next(iter(train_dataloader))
+image, label = image_batch[0], label_batch[0]
+print(image.shape, label)
+
+plt.imshow(image.permute(1, 2, 0))
+plt.title(class_names[label])
+plt.axis(False)
+plt.show()
