@@ -3,7 +3,6 @@
 import torchvision
 from model import vision_transformer
 from predictions import pred
-from torchvision.models._meta import _IMAGENET_CATEGORIES
 
 
 vit_weights = torchvision.models.ViT_L_16_Weights.DEFAULT

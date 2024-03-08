@@ -7,9 +7,26 @@ import torch
 import torch.nn as nn
 
 from torchvision.ops.misc import Conv2dNormActivation, MLP
-from torchvision.models._api import WeightsEnum
+from torchvision.transforms._presets import ImageClassification, InterpolationMode
+from torchvision.utils import _log_api_usage_once
+from torchvision.models._api import register_model, Weights, WeightsEnum
 from torchvision.models._meta import _IMAGENET_CATEGORIES
-from torchvision.models._utils import _ovewrite_named_param
+from torchvision.models._utils import _ovewrite_named_param, handle_legacy_interface
+
+
+__all__ = [
+    "VisionTransformer",
+    "ViT_B_16_Weights",
+    "ViT_B_32_Weights",
+    "ViT_L_16_Weights",
+    "ViT_L_32_Weights",
+    "ViT_H_14_Weights",
+    "vit_b_16",
+    "vit_b_32",
+    "vit_l_16",
+    "vit_l_32",
+    "vit_h_14",
+]
 
 
 class ConvStemConfig(NamedTuple):
@@ -44,6 +61,16 @@ class MLPBlock(MLP):
         unexpected_keys,
         error_msgs,
     ):
+        version = local_metadata.get("version", None)
+
+        if version is None or version < 2:
+            # Replacing legacy MLPBlock with MLP. See https://github.com/pytorch/vision/pull/6053
+            for i in range(2):
+                for type in ["weight", "bias"]:
+                    old_key = f"{prefix}linear_{i+1}.{type}"
+                    new_key = f"{prefix}{3*i}.{type}"
+                    if old_key in state_dict:
+                        state_dict[new_key] = state_dict.pop(old_key)
 
         super()._load_from_state_dict(
             state_dict,
@@ -149,6 +176,7 @@ class VisionTransformer(nn.Module):
         conv_stem_configs: Optional[List[ConvStemConfig]] = None,
     ):
         super().__init__()
+        _log_api_usage_once(self)
         torch._assert(image_size % patch_size == 0, "Input shape indivisible by patch size!")
         self.image_size = image_size
         self.patch_size = patch_size
@@ -277,7 +305,7 @@ class VisionTransformer(nn.Module):
         return x
 
 
-def vision_transformer(
+def _vision_transformer(
     patch_size: int,
     num_layers: int,
     num_heads: int,
@@ -304,6 +332,190 @@ def vision_transformer(
     )
 
     if weights:
-        model.load_state_dict(weights.get_state_dict(progress=progress, check_hash=True), strict=False)
+        model.load_state_dict(weights.get_state_dict(progress=progress, check_hash=False))
 
     return model
+
+
+_COMMON_META: Dict[str, Any] = {
+    "categories": _IMAGENET_CATEGORIES,
+}
+
+_COMMON_SWAG_META = {
+    **_COMMON_META,
+    "recipe": "https://github.com/facebookresearch/SWAG",
+    "license": "https://github.com/facebookresearch/SWAG/blob/main/LICENSE",
+}
+
+
+class ViT_L_16_Weights(WeightsEnum):
+    IMAGENET1K_V1 = Weights(
+        url="https://download.pytorch.org/models/vit_l_16-852ce7e3.pth",
+        transforms=partial(ImageClassification, crop_size=224, resize_size=242),
+        meta={
+            **_COMMON_META,
+            "num_params": 304326632,
+            "min_size": (224, 224),
+            "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_l_16",
+            "_metrics": {
+                "ImageNet-1K": {
+                    "acc@1": 79.662,
+                    "acc@5": 94.638,
+                }
+            },
+            "_ops": 61.555,
+            "_file_size": 1161.023,
+            "_docs": """
+                These weights were trained from scratch by using a modified version of TorchVision's
+                `new training recipe
+                <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.
+            """,
+        },
+    )
+    IMAGENET1K_SWAG_E2E_V1 = Weights(
+        url="https://download.pytorch.org/models/vit_l_16_swag-4f3808c9.pth",
+        transforms=partial(
+            ImageClassification,
+            crop_size=512,
+            resize_size=512,
+            interpolation=InterpolationMode.BICUBIC,
+        ),
+        meta={
+            **_COMMON_SWAG_META,
+            "num_params": 305174504,
+            "min_size": (512, 512),
+            "_metrics": {
+                "ImageNet-1K": {
+                    "acc@1": 88.064,
+                    "acc@5": 98.512,
+                }
+            },
+            "_ops": 361.986,
+            "_file_size": 1164.258,
+            "_docs": """
+                These weights are learnt via transfer learning by end-to-end fine-tuning the original
+                `SWAG <https://arxiv.org/abs/2201.08371>`_ weights on ImageNet-1K data.
+            """,
+        },
+    )
+    IMAGENET1K_SWAG_LINEAR_V1 = Weights(
+        url="https://download.pytorch.org/models/vit_l_16_lc_swag-4d563306.pth",
+        transforms=partial(
+            ImageClassification,
+            crop_size=224,
+            resize_size=224,
+            interpolation=InterpolationMode.BICUBIC,
+        ),
+        meta={
+            **_COMMON_SWAG_META,
+            "recipe": "https://github.com/pytorch/vision/pull/5793",
+            "num_params": 304326632,
+            "min_size": (224, 224),
+            "_metrics": {
+                "ImageNet-1K": {
+                    "acc@1": 85.146,
+                    "acc@5": 97.422,
+                }
+            },
+            "_ops": 61.555,
+            "_file_size": 1161.023,
+            "_docs": """
+                These weights are composed of the original frozen `SWAG <https://arxiv.org/abs/2201.08371>`_ trunk
+                weights and a linear classifier learnt on top of them trained on ImageNet-1K data.
+            """,
+        },
+    )
+    DEFAULT = IMAGENET1K_V1
+
+
+class ViT_L_32_Weights(WeightsEnum):
+    IMAGENET1K_V1 = Weights(
+        url="https://download.pytorch.org/models/vit_l_32-c7638314.pth",
+        transforms=partial(ImageClassification, crop_size=224),
+        meta={
+            **_COMMON_META,
+            "num_params": 306535400,
+            "min_size": (224, 224),
+            "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_l_32",
+            "_metrics": {
+                "ImageNet-1K": {
+                    "acc@1": 76.972,
+                    "acc@5": 93.07,
+                }
+            },
+            "_ops": 15.378,
+            "_file_size": 1169.449,
+            "_docs": """
+                These weights were trained from scratch by using a modified version of `DeIT
+                <https://arxiv.org/abs/2012.12877>`_'s training recipe.
+            """,
+        },
+    )
+    DEFAULT = IMAGENET1K_V1
+
+
+@handle_legacy_interface(weights=("pretrained", ViT_L_16_Weights.IMAGENET1K_V1))
+def vit_l_16(*, weights: Optional[ViT_L_16_Weights] = None, progress: bool = True, **kwargs: Any) -> VisionTransformer:
+    """
+    Constructs a vit_l_16 architecture from
+    `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
+
+    Args:
+        weights (:class:`~torchvision.models.ViT_L_16_Weights`, optional): The pretrained
+            weights to use. See :class:`~torchvision.models.ViT_L_16_Weights`
+            below for more details and possible values. By default, no pre-trained weights are used.
+        progress (bool, optional): If True, displays a progress bar of the download to stderr. Default is True.
+        **kwargs: parameters passed to the ``torchvision.models.vision_transformer.VisionTransformer``
+            base class. Please refer to the `source code
+            <https://github.com/pytorch/vision/blob/main/torchvision/models/vision_transformer.py>`_
+            for more details about this class.
+
+    .. autoclass:: torchvision.models.ViT_L_16_Weights
+        :members:
+    """
+    # weights = ViT_L_16_Weights.verify(weights)
+
+    return _vision_transformer(
+        patch_size=16,
+        num_layers=24,
+        num_heads=16,
+        hidden_dim=1024,
+        mlp_dim=4096,
+        weights=weights,
+        progress=progress,
+        **kwargs,
+    )
+
+
+
+@handle_legacy_interface(weights=("pretrained", ViT_L_32_Weights.IMAGENET1K_V1))
+def vit_l_32(*, weights: Optional[ViT_L_32_Weights] = None, progress: bool = True, **kwargs: Any) -> VisionTransformer:
+    """
+    Constructs a vit_l_32 architecture from
+    `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
+
+    Args:
+        weights (:class:`~torchvision.models.ViT_L_32_Weights`, optional): The pretrained
+            weights to use. See :class:`~torchvision.models.ViT_L_32_Weights`
+            below for more details and possible values. By default, no pre-trained weights are used.
+        progress (bool, optional): If True, displays a progress bar of the download to stderr. Default is True.
+        **kwargs: parameters passed to the ``torchvision.models.vision_transformer.VisionTransformer``
+            base class. Please refer to the `source code
+            <https://github.com/pytorch/vision/blob/main/torchvision/models/vision_transformer.py>`_
+            for more details about this class.
+
+    .. autoclass:: torchvision.models.ViT_L_32_Weights
+        :members:
+    """
+    weights = ViT_L_32_Weights.verify(weights)
+
+    return _vision_transformer(
+        patch_size=32,
+        num_layers=24,
+        num_heads=16,
+        hidden_dim=1024,
+        mlp_dim=4096,
+        weights=weights,
+        progress=progress,
+        **kwargs,
+    )
