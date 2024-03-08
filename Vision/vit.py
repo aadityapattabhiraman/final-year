@@ -1,13 +1,27 @@
 #!/usr/bin/env python3
 
 import torchvision
-from model import vision_transformer
-from predictions import pred
+from PIL import Image
+from model import vit
+import matplotlib.pyplot as plt
 
 
-vit_weights = torchvision.models.ViT_L_16_Weights.DEFAULT
-model = vision_transformer(patch_size=16, mlp_dim=4096, hidden_dim=1024, num_heads=16, num_layers=24,
-                           weights=vit_weights, progress=True)
-img_path = str(input("Enter image path: "))
+weights = torchvision.models.ViT_L_16_Weights.DEFAULT
+img = Image.open(str(input("Enter image path: ")))
+model = vit(weights=weights).to("cuda")
+model.eval()
 
-pred(model=model, weights=vit_weights, image_path=img_path)
+preprocess = weights.transforms()
+batch = preprocess(img).unsqueeze(0).to("cuda")
+predictions = model(batch).squeeze(0).softmax(0)
+class_id = predictions.argmax().item()
+score = predictions[class_id].item()
+category_name = weights.meta["categories"][class_id]
+
+plt.figure()
+plt.imshow(img)
+plt.title(
+    f"Pred: {category_name} | Prob: {100 * score:.1f}%"
+)
+plt.axis(False)
+plt.show()

@@ -455,7 +455,7 @@ class ViT_L_32_Weights(WeightsEnum):
 
 
 @handle_legacy_interface(weights=("pretrained", ViT_L_16_Weights.IMAGENET1K_V1))
-def vit_l_16(*, weights: Optional[ViT_L_16_Weights] = None, progress: bool = True, **kwargs: Any) -> VisionTransformer:
+def vit(*, weights: Optional[ViT_L_16_Weights] = None, progress: bool = True, **kwargs: Any) -> VisionTransformer:
     """
     Constructs a vit_l_16 architecture from
     `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
