@@ -4,6 +4,7 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from PIL import Image
+import torch, torchvision
 
 
 def pred(model: torch.nn.Module, weights, image_path: str, image_size: Tuple[int, int]=(224,224),
