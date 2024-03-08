@@ -47,4 +47,4 @@ res_o = model_official(inp)
 assert get_n_params(model_custom) == get_n_params(model_official)
 assert_tensors_equal(res_c, res_o)
 
-torch.save(model.custom, "model.pth")
+torch.save(model_custom, "model.pth")
