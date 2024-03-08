@@ -28,7 +28,7 @@ class PatchEmbed(nn.Module):
 
 class Attention(nn.Module):
     def __init__(self, dim, n_heads=12, qkv_bias=True, attn_p=0., proj_p=0.):
-        super.__init__()
+        super().__init__()
         self.n_heads = n_heads
         self.dim = dim
         self.head_dim = dim // n_heads
