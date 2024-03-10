@@ -5,36 +5,7 @@ from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
 import torch
 import torch.nn as nn
-
 from torchvision.ops.misc import Conv2dNormActivation, MLP
-from torchvision.transforms._presets import ImageClassification, InterpolationMode
-from torchvision.utils import _log_api_usage_once
-from torchvision.models._api import register_model, Weights, WeightsEnum
-from torchvision.models._meta import _IMAGENET_CATEGORIES
-from torchvision.models._utils import _ovewrite_named_param, handle_legacy_interface
-
-
-__all__ = [
-    "VisionTransformer",
-    "ViT_B_16_Weights",
-    "ViT_B_32_Weights",
-    "ViT_L_16_Weights",
-    "ViT_L_32_Weights",
-    "ViT_H_14_Weights",
-    "vit_b_16",
-    "vit_b_32",
-    "vit_l_16",
-    "vit_l_32",
-    "vit_h_14",
-]
-
-
-class ConvStemConfig(NamedTuple):
-    out_channels: int
-    kernel_size: int
-    stride: int
-    norm_layer: Callable[..., nn.Module] = nn.BatchNorm2d
-    activation_layer: Callable[..., nn.Module] = nn.ReLU
 
 
 class MLPBlock(MLP):
@@ -173,10 +144,8 @@ class VisionTransformer(nn.Module):
         num_classes: int = 1000,
         representation_size: Optional[int] = None,
         norm_layer: Callable[..., torch.nn.Module] = partial(nn.LayerNorm, eps=1e-6),
-        conv_stem_configs: Optional[List[ConvStemConfig]] = None,
     ):
         super().__init__()
-        _log_api_usage_once(self)
         torch._assert(image_size % patch_size == 0, "Input shape indivisible by patch size!")
         self.image_size = image_size
         self.patch_size = patch_size
@@ -188,31 +157,9 @@ class VisionTransformer(nn.Module):
         self.representation_size = representation_size
         self.norm_layer = norm_layer
 
-        if conv_stem_configs is not None:
-            # As per https://arxiv.org/abs/2106.14881
-            seq_proj = nn.Sequential()
-            prev_channels = 3
-            for i, conv_stem_layer_config in enumerate(conv_stem_configs):
-                seq_proj.add_module(
-                    f"conv_bn_relu_{i}",
-                    Conv2dNormActivation(
-                        in_channels=prev_channels,
-                        out_channels=conv_stem_layer_config.out_channels,
-                        kernel_size=conv_stem_layer_config.kernel_size,
-                        stride=conv_stem_layer_config.stride,
-                        norm_layer=conv_stem_layer_config.norm_layer,
-                        activation_layer=conv_stem_layer_config.activation_layer,
-                    ),
-                )
-                prev_channels = conv_stem_layer_config.out_channels
-            seq_proj.add_module(
-                "conv_last", nn.Conv2d(in_channels=prev_channels, out_channels=hidden_dim, kernel_size=1)
-            )
-            self.conv_proj: nn.Module = seq_proj
-        else:
-            self.conv_proj = nn.Conv2d(
-                in_channels=3, out_channels=hidden_dim, kernel_size=patch_size, stride=patch_size
-            )
+        self.conv_proj = nn.Conv2d(
+            in_channels=3, out_channels=hidden_dim, kernel_size=patch_size, stride=patch_size
+        )
 
         seq_length = (image_size // patch_size) ** 2
 
@@ -311,14 +258,10 @@ def _vision_transformer(
     num_heads: int,
     hidden_dim: int,
     mlp_dim: int,
-    weights: Optional[WeightsEnum],
+    weights,
     progress: bool,
     **kwargs: Any,
 ) -> VisionTransformer:
-    if weights is not None:
-        _ovewrite_named_param(kwargs, "num_classes", len(weights.meta["categories"]))
-        assert weights.meta["min_size"][0] == weights.meta["min_size"][1]
-        _ovewrite_named_param(kwargs, "image_size", weights.meta["min_size"][0])
     image_size = kwargs.pop("image_size", 224)
 
     model = VisionTransformer(
@@ -337,125 +280,7 @@ def _vision_transformer(
     return model
 
 
-_COMMON_META: Dict[str, Any] = {
-    "categories": _IMAGENET_CATEGORIES,
-}
-
-_COMMON_SWAG_META = {
-    **_COMMON_META,
-    "recipe": "https://github.com/facebookresearch/SWAG",
-    "license": "https://github.com/facebookresearch/SWAG/blob/main/LICENSE",
-}
-
-
-class ViT_L_16_Weights(WeightsEnum):
-    IMAGENET1K_V1 = Weights(
-        url="https://download.pytorch.org/models/vit_l_16-852ce7e3.pth",
-        transforms=partial(ImageClassification, crop_size=224, resize_size=242),
-        meta={
-            **_COMMON_META,
-            "num_params": 304326632,
-            "min_size": (224, 224),
-            "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_l_16",
-            "_metrics": {
-                "ImageNet-1K": {
-                    "acc@1": 79.662,
-                    "acc@5": 94.638,
-                }
-            },
-            "_ops": 61.555,
-            "_file_size": 1161.023,
-            "_docs": """
-                These weights were trained from scratch by using a modified version of TorchVision's
-                `new training recipe
-                <https://pytorch.org/blog/how-to-train-state-of-the-art-models-using-torchvision-latest-primitives/>`_.
-            """,
-        },
-    )
-    IMAGENET1K_SWAG_E2E_V1 = Weights(
-        url="https://download.pytorch.org/models/vit_l_16_swag-4f3808c9.pth",
-        transforms=partial(
-            ImageClassification,
-            crop_size=512,
-            resize_size=512,
-            interpolation=InterpolationMode.BICUBIC,
-        ),
-        meta={
-            **_COMMON_SWAG_META,
-            "num_params": 305174504,
-            "min_size": (512, 512),
-            "_metrics": {
-                "ImageNet-1K": {
-                    "acc@1": 88.064,
-                    "acc@5": 98.512,
-                }
-            },
-            "_ops": 361.986,
-            "_file_size": 1164.258,
-            "_docs": """
-                These weights are learnt via transfer learning by end-to-end fine-tuning the original
-                `SWAG <https://arxiv.org/abs/2201.08371>`_ weights on ImageNet-1K data.
-            """,
-        },
-    )
-    IMAGENET1K_SWAG_LINEAR_V1 = Weights(
-        url="https://download.pytorch.org/models/vit_l_16_lc_swag-4d563306.pth",
-        transforms=partial(
-            ImageClassification,
-            crop_size=224,
-            resize_size=224,
-            interpolation=InterpolationMode.BICUBIC,
-        ),
-        meta={
-            **_COMMON_SWAG_META,
-            "recipe": "https://github.com/pytorch/vision/pull/5793",
-            "num_params": 304326632,
-            "min_size": (224, 224),
-            "_metrics": {
-                "ImageNet-1K": {
-                    "acc@1": 85.146,
-                    "acc@5": 97.422,
-                }
-            },
-            "_ops": 61.555,
-            "_file_size": 1161.023,
-            "_docs": """
-                These weights are composed of the original frozen `SWAG <https://arxiv.org/abs/2201.08371>`_ trunk
-                weights and a linear classifier learnt on top of them trained on ImageNet-1K data.
-            """,
-        },
-    )
-    DEFAULT = IMAGENET1K_V1
-
-
-class ViT_L_32_Weights(WeightsEnum):
-    IMAGENET1K_V1 = Weights(
-        url="https://download.pytorch.org/models/vit_l_32-c7638314.pth",
-        transforms=partial(ImageClassification, crop_size=224),
-        meta={
-            **_COMMON_META,
-            "num_params": 306535400,
-            "min_size": (224, 224),
-            "recipe": "https://github.com/pytorch/vision/tree/main/references/classification#vit_l_32",
-            "_metrics": {
-                "ImageNet-1K": {
-                    "acc@1": 76.972,
-                    "acc@5": 93.07,
-                }
-            },
-            "_ops": 15.378,
-            "_file_size": 1169.449,
-            "_docs": """
-                These weights were trained from scratch by using a modified version of `DeIT
-                <https://arxiv.org/abs/2012.12877>`_'s training recipe.
-            """,
-        },
-    )
-    DEFAULT = IMAGENET1K_V1
-
-
-@handle_legacy_interface(weights=("pretrained", ViT_L_16_Weights.IMAGENET1K_V1))
-def vit(*, weights: Optional[ViT_L_16_Weights] = None, progress: bool = True, **kwargs: Any) -> VisionTransformer:
+def vit(*, weights = None, progress: bool = True, **kwargs: Any) -> VisionTransformer:
     """
     Constructs a vit_l_16 architecture from
     `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
@@ -473,7 +298,6 @@ def vit(*, weights: Optional[ViT_L_16_Weights] = None, progress: bool = True, **
     .. autoclass:: torchvision.models.ViT_L_16_Weights
         :members:
     """
-    # weights = ViT_L_16_Weights.verify(weights)
 
     return _vision_transformer(
         patch_size=16,
@@ -488,34 +312,3 @@ def vit(*, weights: Optional[ViT_L_16_Weights] = None, progress: bool = True, **
 
 
 
-@handle_legacy_interface(weights=("pretrained", ViT_L_32_Weights.IMAGENET1K_V1))
-def vit_l_32(*, weights: Optional[ViT_L_32_Weights] = None, progress: bool = True, **kwargs: Any) -> VisionTransformer:
-    """
-    Constructs a vit_l_32 architecture from
-    `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale <https://arxiv.org/abs/2010.11929>`_.
-
-    Args:
-        weights (:class:`~torchvision.models.ViT_L_32_Weights`, optional): The pretrained
-            weights to use. See :class:`~torchvision.models.ViT_L_32_Weights`
-            below for more details and possible values. By default, no pre-trained weights are used.
-        progress (bool, optional): If True, displays a progress bar of the download to stderr. Default is True.
-        **kwargs: parameters passed to the ``torchvision.models.vision_transformer.VisionTransformer``
-            base class. Please refer to the `source code
-            <https://github.com/pytorch/vision/blob/main/torchvision/models/vision_transformer.py>`_
-            for more details about this class.
-
-    .. autoclass:: torchvision.models.ViT_L_32_Weights
-        :members:
-    """
-    weights = ViT_L_32_Weights.verify(weights)
-
-    return _vision_transformer(
-        patch_size=32,
-        num_layers=24,
-        num_heads=16,
-        hidden_dim=1024,
-        mlp_dim=4096,
-        weights=weights,
-        progress=progress,
-        **kwargs,
-    )
