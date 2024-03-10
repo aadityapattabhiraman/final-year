@@ -80,3 +80,4 @@ def translate(sentence: str):
 
 # read the sentence from argument
 translate(sys.argv[1] if len(sys.argv) > 1 else "I am not a very good student")
+print()

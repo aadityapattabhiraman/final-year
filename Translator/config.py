@@ -5,14 +5,14 @@ from pathlib import Path
 
 def get_config():
     return {
-        "batch_size": 7,
-        "num_epochs": 20,
+        "batch_size": 6,
+        "num_epochs": 30,
         "lr": 10**-4,
         "seq_len": 512,
         "d_model": 512,
-        "datasource": "kde4",
+        "datasource": "opus_books",
         "lang_src": "en",
-        "lang_tgt": "ta",
+        "lang_tgt": "it",
         "model_folder": "weights",
         "model_basename": "tmodel_",
         "preload": "latest",
@@ -22,7 +22,7 @@ def get_config():
 
 
 def get_weights_file_path(config, epoch: str):
-    model_folder = "/home/akugyo/GitHub/final-year/Translator/kde4_weights/"
+    model_folder = "/home/akugyo/GitHub/final-year/Translator/opus_books_weights/"
     model_filename = f"{config['model_basename']}{epoch}.pt"
     return str(Path('.') / model_folder / model_filename)
 

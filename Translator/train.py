@@ -154,8 +154,8 @@ def get_or_build_tokenizer(config, ds, lang):
 
 def get_ds(config):
     # It only has the train split, so we divide it ourselves
-    ds_raw = load_dataset(f"{config['datasource']}", lang1=f"{config['lang_src']}", lang2=f"{config['lang_tgt']}", split="train")
-    ds_raw = ds_raw.filter(lambda example: filter_by_length_and_lang(example, "ta"))
+    ds_raw = load_dataset(f"{config['datasource']}", "en-it", split="train")
+    ds_raw = ds_raw.filter(lambda example: filter_by_length_and_lang(example, "en"))
 
     # Build tokenizers
     tokenizer_src = get_or_build_tokenizer(config, ds_raw, config["lang_src"])
