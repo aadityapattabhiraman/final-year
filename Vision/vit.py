@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 
 weights = torchvision.models.ViT_L_16_Weights.DEFAULT
+print()
 img = Image.open(str(input("Enter image path: ")))
 model = vit(weights=weights).to("cuda")
 model.eval()
