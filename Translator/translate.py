@@ -28,8 +28,8 @@ def translate(sentence: str):
     label = ""
     if type(sentence) == int or sentence.isdigit():
         id = int(sentence)
-        ds = load_dataset(f"{config['datasource']}", lang1=f"{config['src_lang']}", lang2=f"{config['lang_tgt']}", split="train")
-        ds = BilingualDataset(ds, tokenizer_src, tokenizer_tgt, config["lang_src"], cong["lang_tgt"], config["seq_len"])
+        ds = load_dataset(f"{config['datasource']}", f"{config['lang_src']}"+"-"+f"{config['lang_tgt']}", split="train")
+        ds = BilingualDataset(ds, tokenizer_src, tokenizer_tgt, config["lang_src"], config["lang_tgt"], config["seq_len"])
         sentence = ds[id]["src_text"]
         label = ds[id]["tgt_text"]
     seq_len = config["seq_len"]

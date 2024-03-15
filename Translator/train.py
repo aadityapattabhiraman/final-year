@@ -197,7 +197,7 @@ def train_model(config):
     elif (device == "mps"):
         print(f"Device name: <mps>")
     else:
-        print("NOTE: If you have a GPU, consider using it or training.")
+        print("NOTE: If you have a GPU, consider using it for training.")
     device = torch.device(device)
 
     # Make sure the weights folder exists
